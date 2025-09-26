@@ -190,7 +190,10 @@ query_stmt=""
 
 while IFS= read -r line || [ -n "$line" ]; do
     [[ -z "$line" ]] && continue
-    param_flags="$otel_params"
+    # Only set otel_params if we're running with OTEL queries
+    if [ "$EXTRA" = "otel" ]; then
+        param_flags="$otel_params"
+    fi
     if [[ "$line" =~ ^--[[:space:]]*\{.*\} ]]; then
         json=$(echo "$line" | sed 's/^--[[:space:]]*//')
         # Start with OTEL params if they exist
@@ -202,8 +205,13 @@ while IFS= read -r line || [ -n "$line" ]; do
 
     echo $param_flags
 
+    # Skip lines that start with --
+    if [[ "$line" =~ ^-- ]]; then
+        continue
+    fi
+    
     query_stmt="$line"
-    [[ -z "$query_stmt" || "$query_stmt" =~ ^-- ]] && continue
+    [[ -z "$query_stmt" ]] && continue
     echo $query_stmt
     # Drop cache
     while true; do

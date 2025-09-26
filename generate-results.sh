@@ -56,22 +56,33 @@ fi
     echo ']; // end of data'
     echo 'const queries = ['
     FIRST=1
-    cat queries.sql | while read query; do
+    while IFS= read -r query || [ -n "$query" ]; do
+        # Skip lines that start with --
+        [[ "$query" =~ ^-- ]] && continue
+        # Skip empty lines
+        [ -z "$query" ] && continue
+        
         [ "${FIRST}" = "0" ] && echo -n ','
-        echo $query | jq  --raw-input .
+        echo "$query" | jq --raw-input .
         FIRST=0
-    done
+    done < queries.sql
     
     # Add OTEL queries if --extra=otel
     if [ "$EXTRA" = "otel" ]; then
         if [ -f "queries_otel.sql" ]; then
             # Add comma if there were regular queries before
+            [ "${FIRST}" = "0" ] && echo -n ','
             
-            cat queries_otel.sql | while read query; do
-                echo -n ','
-                echo $query | jq  --raw-input .
+            while IFS= read -r query || [ -n "$query" ]; do
+                # Skip lines that start with --
+                [[ "$query" =~ ^-- ]] && continue
+                # Skip empty lines
+                [ -z "$query" ] && continue
+                
+                [ "${FIRST}" = "0" ] && echo -n ','
+                echo "$query" | jq --raw-input .
                 FIRST=0
-            done
+            done < queries_otel.sql
         fi
     fi
     
